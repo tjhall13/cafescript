@@ -1,0 +1,15 @@
+<$
+var other = cafe('test2.cafe');
+$>
+<html>
+    <head>
+        <title><$ print('hello'); $></title>
+    </head>
+    <body>
+        <ul><$
+        for(var i = 0; i < 10; i++) { $>
+            <li><$ other.print(i); $></li><$
+        } $>
+        </ul>
+    </body>
+</html>

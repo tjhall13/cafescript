@@ -1,0 +1,57 @@
+#!/usr/bin/env nodejs
+
+var path = require('path');
+var nopt = require('nopt');
+
+var cafe = require('../index.js');
+var pkg = require('../package.json');
+
+function help() {
+  [
+    'Usage: cafe [options] <file> [<file> [<file> ...]]',
+    'Options:',
+    '  --version -v         Display version information.',
+    '  --help -h            Show this help.',
+    '',
+    '<file> is a .cafe file which will be processed',
+    'to the stdout.'
+  ].forEach(function(str) { process.stdout.write(str + '\n'); });
+    process.exit();
+}
+
+function version() {
+    process.stdout.write('cafe v' + pkg.version + '\n');
+    process.exit();
+}
+
+function fatal(msg, code) {
+    process.stdout.write('cafe: ' + pkg.description + ' (v' + pkg.version + ')\n');
+    process.stdout.write('Fatal error: ' + msg + '\n');
+    process.exit(code);
+}
+
+process.title = 'cafe';
+
+var cli = nopt({
+    help: Boolean,
+    version: Boolean
+}, {
+    h: '--help',
+    v: '--version'
+}, process.argv, 2);
+
+if(cli.help) {
+    help();
+}
+
+if(cli.version) {
+    version();
+}
+
+var files = cli.argv.remain;
+var base = process.cwd();
+
+files.forEach(function(file) {
+    var script = cafe(path.resolve(base, file), process.stdout);
+    script.print();
+});
