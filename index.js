@@ -53,6 +53,8 @@ module.exports = (function() {
         var input = fs.readFileSync(file, 'utf8');
         if(writable) {
             _writable = writable;
+        } else if(!_writable) {
+            _writable = process.stdout;
         }
         
         parser.yy.text = '';
