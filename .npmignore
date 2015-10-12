@@ -1,3 +1,4 @@
+.npmignore
 cafe.jison
 Gruntfile.js
 test/
