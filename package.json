@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "CafeScript is a node component driven preprocessor.",
   "main": "index.js",
+  "bin": {
+    "cafe": "bin/cafe"
+  },
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-contrib-jshint": "^0.11.3",
@@ -22,12 +25,6 @@
   "license": "MIT",
   "directories": {
     "test": "test"
-  },
-  "dependencies": {
-    "grunt-contrib-jshint": "^0.11.3",
-    "grunt": "^0.4.5",
-    "grunt-contrib-nodeunit": "^0.4.1",
-    "grunt-jison": "^1.3.2"
   },
   "repository": {
     "type": "git",
