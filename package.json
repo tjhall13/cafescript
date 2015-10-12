@@ -1,5 +1,5 @@
 {
-  "name": "cafe",
+  "name": "cafescript",
   "version": "0.0.1",
   "description": "Node component driven preprocessor.",
   "main": "index.js",
@@ -15,6 +15,7 @@
   "keywords": [
     "preprocessor",
     "cafe",
+    "cafescript",
     "php"
   ],
   "author": "Trevor Hall",
