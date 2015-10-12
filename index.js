@@ -43,50 +43,59 @@ function Printer(writable) {
     return print;
 }
 
-module.exports = function cafe(file, writable) {
-    file = path.resolve(__dirname, file);
-    var input = fs.readFileSync(file, 'utf8');
+module.exports = (function() {
+    var _writable;
+    var _dir = [process.cwd()];
     
-    if(writable) {
-        cafe.writable = writable;
-    } else {
-        writable = cafe.writable;
-    }
-    
-    parser.yy.text = '';
-    parser.yy.symbols = [];
-    parser.parse(input);
-    
-    var symbols = parser.yy.symbols;
-    var strings = [];
-    var code = '';
-    
-    for(var i = 0; i < symbols.length; i++) {
-        if(!symbols[i].string) {
-            symbols[i].string = '';
+    return function cafe(file, writable) {
+        file = path.resolve(_dir[_dir.length - 1], file);
+        
+        var input = fs.readFileSync(file, 'utf8');
+        if(writable) {
+            _writable = writable;
         }
-        if(!symbols[i].code) {
-            symbols[i].code = '';
+        
+        parser.yy.text = '';
+        parser.yy.symbols = [];
+        parser.parse(input);
+        
+        var symbols = parser.yy.symbols;
+        var strings = [];
+        var code = '';
+        
+        for(var i = 0; i < symbols.length; i++) {
+            if(!symbols[i].string) {
+                symbols[i].string = '';
+            }
+            if(!symbols[i].code) {
+                symbols[i].code = '';
+            }
+            strings.push(symbols[i].string);
+            code += 'print(__strings__[' + i + ']);\n' + symbols[i].code;
         }
-        strings.push(symbols[i].string);
-        code += 'print(__strings__[' + i + ']);\n' + symbols[i].code;
-    }
-    
-    var script = new vm.Script(code);
-    var self = cafe;
-    
-    return {
-        print: function() {
-            var context = vm.createContext({
-                print: Printer(writable),
-                cafe: self,
-                require: require,
-                arguments: arguments,
+        
+        var script = new vm.Script(code, {
+            filename: path.basename(file)
+        });
+        var self = cafe;
+        
+        return {
+            print: function() {
+                var context = vm.createContext({
+                    print: Printer(_writable),
+                    cafe: self,
+                    require: require,
+                    arguments: arguments,
+                    __dirname: path.dirname(file),
+                    __filename: path.basename(file),
+                    
+                    __strings__: strings
+                });
                 
-                __strings__: strings
-            });
-            
-            script.runInContext(context, { });
-        }
+                _dir.push(path.dirname(file));
+                script.runInContext(context, { });
+                _dir.pop();
+            }
+        };
     };
-};
+})();
