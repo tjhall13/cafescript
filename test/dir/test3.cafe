@@ -1,0 +1,3 @@
+<div>
+    <$js print('test'); $>
+</div>

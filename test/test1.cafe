@@ -1,0 +1,17 @@
+<$js
+var other = require('./test2.cafe');
+var cache = require('./dir/test3.cafe');
+$>
+<html>
+    <head>
+        <title><$ print('hello'); $></title>
+    </head>
+    <body>
+        <ul><$ for(var i = 0; i < 10; i++) { $>
+            <li>
+            <$ other(i); $>
+            </li><$js
+        } $></ul>
+        <$ cache(); $>
+    </body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "cafescript",
+  "version": "0.2.0",
+  "description": "CafeScript is a node component driven preprocessor.",
+  "main": "index.js",
+  "bin": {
+    "cafe": "bin/cafe"
+  },
+  "dependencies": {
+    "nopt": "^3.0.4"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-contrib-jshint": "^0.11.3",
+    "grunt-jison": "^1.3.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "preprocessor",
+    "cafe",
+    "cafescript",
+    "php"
+  ],
+  "author": "Trevor Hall",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tjhall13/cafescript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tjhall13/cafescript/issues"
+  },
+  "homepage": "https://github.com/tjhall13/cafescript#readme"
+}
