@@ -52,6 +52,6 @@ var files = cli.argv.remain;
 var base = process.cwd();
 
 files.forEach(function(file) {
-    var script = cafe(path.resolve(base, file), process.stdout);
-    script.print();
+    var script = require(path.resolve(base, file));
+    script();
 });
