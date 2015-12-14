@@ -8,8 +8,9 @@ var printer = require('./lib/printer.js');
 var parser = require('./lib/cafe.js').parser;
 
 function load(filename, parent) {
-	var _module = new Module(require.resolve(filename), parent);
-	_module.filename = filename;
+	var _filename = Module._resolveFilename(filename, parent);
+	var _module = new Module(_filename, parent);
+	_module.filename = _filename;
 	_module.paths = Module._nodeModulePaths(path.dirname(filename));
 	return _module;
 }
@@ -51,7 +52,7 @@ function compile(module, filename, stream, middleware) {
 	}
 	code += '});';
 
-	var print = new printer(stream);
+	var print = printer(stream);
 	print.__strings__ = function(i) {
 		this.write(strings[i]);
 	};
@@ -85,16 +86,17 @@ require.extensions['.cafe'] = function(module, filename) {
 };
 
 module.exports = {
-	middleware: function(filename) {
-		var _module = load(filename, module);
+	middleware: function(filename, parent) {
+		var _module = load(filename, parent);
 		var _stream = new Directed();
 
 		_module._$cafe = _stream;
-		var run = compile(_module, filename, _stream, true);
+		var run = compile(_module, _module.filename, _stream, true);
 		return function(req, res, next) {
 			_stream.direct(res);
 			try {
 				run(req);
+				_stream.release();
 			} catch(err) {
 				next(err);
 			}
