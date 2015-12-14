@@ -12,14 +12,14 @@ CafeScript .cafe files are simillar to .php files.  CafeScript will preprocess t
 // main.js
 var cafe = require('cafescript');
 
-var script = cafe('./myscript.cafe', process.stdout);
-script.print();
+var script = require('./myscript.cafe');
+script();
 ```
 
 ```
 <!-- myscript.cafe -->
 <$
-var hello = 'hello';
+var hello = 'Hello, World';
 $>
 <html>
   <head>
@@ -29,8 +29,8 @@ $>
 <$
 
 // Include other scripts like this:
-// var script = cafe('./other.cafe');
-// script.print();
+// var script = require('./other.cafe');
+// script();
 
 print('CafeScript');
 

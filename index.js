@@ -1,103 +1,103 @@
+var Module = require('module');
 var path = require('path');
 var fs = require('fs');
 var vm = require('vm');
-var Buffer = require('buffer').Buffer;
 
-var parser = require('./cafe.js').parser;
+var Directed = require('./lib/directed.js');
+var printer = require('./lib/printer.js');
+var parser = require('./lib/cafe.js').parser;
 
-function Printer(writable) {
-    var print = function(str) {
-        print.write('' + str);
-    };
-    
-    var buffer;
-    
-    print.write = function(data) {
-        if(buffer && Buffer.isBuffer(buffer)) {
-            buffer = Buffer.concat([buffer, new Buffer(data)]);
-        } else {
-            writable.write(data);
-        }
-    };
-    
-    print.start = function() {
-        buffer = new Buffer(0);
-    };
-    
-    print.flush = function() {
-        if(buffer && Buffer.isBuffer(buffer)) {
-            writable.write(buffer);
-        }
-        buffer = null;
-        writable.flush();
-    };
-    
-    print.clean = function() {
-        buffer = null;
-    };
-    
-    print.get = function() {
-        return buffer;
-    };
-    
-    return print;
+function load(filename, parent) {
+	var _module = new Module(require.resolve(filename), parent);
+	_module.filename = filename;
+	_module.paths = Module._nodeModulePaths(path.dirname(filename));
+	return _module;
 }
 
-module.exports = (function() {
-    var _writable;
-    var _dir = [process.cwd()];
-    
-    return function cafe(file, writable) {
-        file = path.resolve(_dir[_dir.length - 1], file);
-        
-        var input = fs.readFileSync(file, 'utf8');
-        if(writable) {
-            _writable = writable;
-        } else if(!_writable) {
-            _writable = process.stdout;
-        }
-        
-        parser.yy.text = '';
-        parser.yy.symbols = [];
-        parser.parse(input);
-        
-        var symbols = parser.yy.symbols;
-        var strings = [];
-        var code = '';
-        
-        for(var i = 0; i < symbols.length; i++) {
-            if(!symbols[i].string) {
-                symbols[i].string = '';
-            }
-            if(!symbols[i].code) {
-                symbols[i].code = '';
-            }
-            strings.push(symbols[i].string);
-            code += 'print(__strings__[' + i + ']);\n' + symbols[i].code;
-        }
-        
-        var script = new vm.Script(code, {
-            filename: path.basename(file)
-        });
-        var self = cafe;
-        
-        return {
-            print: function() {
-                var context = vm.createContext({
-                    print: Printer(_writable),
-                    cafe: self,
-                    require: require,
-                    arguments: arguments,
-                    __dirname: path.dirname(file),
-                    __filename: path.basename(file),
-                    
-                    __strings__: strings
-                });
-                
-                _dir.push(path.dirname(file));
-                script.runInContext(context, { });
-                _dir.pop();
-            }
-        };
-    };
-})();
+function compile(module, filename, stream, middleware) {
+	function require(path) {
+		return module.require(path);
+	}
+	require.resolve = function(request) {
+		return Module._resolveFilename(request, module);
+	};
+	require.cache = Module._cache;
+
+	var input = fs.readFileSync(filename, 'utf8');
+
+	parser.yy.text = '';
+	parser.yy.symbols = [];
+	parser.yy.offset = [];
+	parser.parse(input);
+
+	var symbols = parser.yy.symbols;
+	var strings = [];
+	var code;
+
+	if(middleware) {
+		code = '(function(request) {';
+	} else {
+		code = '(function() {';
+	}
+	for(var i = 0; i < symbols.length; i++) {
+		if(!symbols[i].string) {
+			symbols[i].string = '';
+		}
+		if(!symbols[i].code) {
+			symbols[i].code = '';
+		}
+		strings.push(symbols[i].string);
+		code += '\nprint.__strings__(' + i + ');\n' + symbols[i].code;
+	}
+	code += '});';
+
+	var print = new printer(stream);
+	print.__strings__ = function(i) {
+		this.write(strings[i]);
+	};
+
+	var script = new vm.Script(code);
+	var global = {
+		print: print,
+		request: { },
+		require: require,
+		console: console,
+		__dirname: path.dirname(filename),
+		__filename: path.basename(filename)
+	};
+	var options = {
+		filename: filename
+	};
+
+	var func = script.runInNewContext(global, options);
+	module.exports = func;
+
+	return module.exports;
+}
+
+require.extensions['.cafe'] = function(module, filename) {
+	var stream = process.stdout;
+	if(module.parent._$cafe) {
+		module._$cafe = module.parent._$cafe;
+		stream = module._$cafe;
+	}
+	compile(module, filename, stream, false);
+};
+
+module.exports = {
+	middleware: function(filename) {
+		var _module = load(filename, module);
+		var _stream = new Directed();
+
+		_module._$cafe = _stream;
+		var run = compile(_module, filename, _stream, true);
+		return function(req, res, next) {
+			_stream.direct(res);
+			try {
+				run(req);
+			} catch(err) {
+				next(err);
+			}
+		};
+	}
+};

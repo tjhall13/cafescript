@@ -1,22 +1,19 @@
 module.exports = function(grunt) {
-    grunt.initConfig({
-        jison: {
-            cafe: {
-                files: { 'cafe.js': 'cafe.jison' }
-            }
-        },
-        jshint: {
-            files: ['Gruntfile.js', 'index.js', 'bin/cafe'],
-            options: { }
-        },
-        nodeunit: {
-            
-        }
-    });
-    
-    grunt.loadNpmTasks('grunt-contrib-jshint');
-    grunt.loadNpmTasks('grunt-contrib-nodeunit');
-    grunt.loadNpmTasks('grunt-jison');
-    
-    grunt.registerTask('default', ['jison', 'jshint']);
+	grunt.initConfig({
+		jison: {
+			development: {
+				files: { './lib/cafe.js': 'cafe.jison' }
+			}
+		},
+		jshint: {
+			development: {
+				src: ['Gruntfile.js', 'index.js', 'bin/cafe', 'lib/*.js', '!lib/cafe.js']
+			}
+		}
+	});
+
+	grunt.loadNpmTasks('grunt-contrib-jshint');
+	grunt.loadNpmTasks('grunt-jison');
+
+	grunt.registerTask('default', ['jison', 'jshint']);
 };

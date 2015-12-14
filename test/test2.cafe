@@ -1,6 +1,5 @@
-<$
-
-var test = cafe('./dir/test3.cafe');
-
+<$js
+var test = require('./dir/test3.cafe');
 $>
-<h4><$ print(arguments[0]); $></h4><$ test.print(); $>
+<h4><$ print(arguments[0]); $></h4>
+<$ test(); $>
