@@ -33,13 +33,13 @@ function compile(module, filename, stream, middleware) {
 
 	var symbols = parser.yy.symbols;
 	var strings = [];
-	var code;
-
+	var	code;
 	if(middleware) {
 		code = '(function(request) {';
 	} else {
 		code = '(function() {';
 	}
+
 	for(var i = 0; i < symbols.length; i++) {
 		if(!symbols[i].string) {
 			symbols[i].string = '';
@@ -52,15 +52,13 @@ function compile(module, filename, stream, middleware) {
 	}
 	code += '});';
 
+	var script = new vm.Script(code);
 	var print = printer(stream);
 	print.__strings__ = function(i) {
 		this.write(strings[i]);
 	};
-
-	var script = new vm.Script(code);
 	var global = {
 		print: print,
-		request: { },
 		require: require,
 		console: console,
 		__dirname: path.dirname(filename),
@@ -69,37 +67,46 @@ function compile(module, filename, stream, middleware) {
 	var options = {
 		filename: filename
 	};
+	var func;
 
-	var func = script.runInNewContext(global, options);
-	module.exports = func;
-
-	return module.exports;
+	if('_$cafe' in module) {
+		Object.defineProperty(module, '_$cafe', {
+			get: function() {
+				if(middleware) {
+					return stream;
+				} else {
+					return undefined;
+				}
+			}
+		});
+	}
+	if(middleware) {
+		// middleware
+		var run = script.runInNewContext(global, options);
+		func = function(req, res, next) {
+			stream.direct(res);
+			try {
+				run(req);
+				stream.release();
+			} catch(err) {
+				next(err);
+			}
+		};
+		module.exports.middleware = func;
+	} else {
+		// module
+		func = script.runInNewContext(global, options);
+		module.exports = func;
+	}
 }
 
 require.extensions['.cafe'] = function(module, filename) {
 	var stream = process.stdout;
+	var directed = new Directed();
 	if(module.parent._$cafe) {
 		module._$cafe = module.parent._$cafe;
 		stream = module._$cafe;
 	}
 	compile(module, filename, stream, false);
-};
-
-module.exports = {
-	middleware: function(filename, parent) {
-		var _module = load(filename, parent);
-		var _stream = new Directed();
-
-		_module._$cafe = _stream;
-		var run = compile(_module, _module.filename, _stream, true);
-		return function(req, res, next) {
-			_stream.direct(res);
-			try {
-				run(req);
-				_stream.release();
-			} catch(err) {
-				next(err);
-			}
-		};
-	}
+	compile(module, filename, directed, true);
 };
