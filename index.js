@@ -7,23 +7,7 @@ var Directed = require('./lib/directed.js');
 var printer = require('./lib/printer.js');
 var parser = require('./lib/cafe.js').parser;
 
-function load(filename, parent) {
-	var _filename = Module._resolveFilename(filename, parent);
-	var _module = new Module(_filename, parent);
-	_module.filename = _filename;
-	_module.paths = Module._nodeModulePaths(path.dirname(filename));
-	return _module;
-}
-
-function compile(module, filename, stream, middleware) {
-	function require(path) {
-		return module.require(path);
-	}
-	require.resolve = function(request) {
-		return Module._resolveFilename(request, module);
-	};
-	require.cache = Module._cache;
-
+function compile(module, filename) {
 	var input = fs.readFileSync(filename, 'utf8');
 
 	parser.yy.text = '';
@@ -33,12 +17,7 @@ function compile(module, filename, stream, middleware) {
 
 	var symbols = parser.yy.symbols;
 	var strings = [];
-	var	code;
-	if(middleware) {
-		code = '(function(request) {';
-	} else {
-		code = '(function() {';
-	}
+	var	code = '(function(request) {';
 
 	for(var i = 0; i < symbols.length; i++) {
 		if(!symbols[i].string) {
@@ -51,9 +30,29 @@ function compile(module, filename, stream, middleware) {
 		code += '\nprint.__strings__(' + i + ');\n' + symbols[i].code;
 	}
 	code += '});';
-
 	var script = new vm.Script(code);
-	var print = printer(stream);
+
+	return {
+		script: script,
+		strings: strings
+	};
+}
+
+function environment(module, filename, strings, middleware) {
+	function require(path) {
+		return module.require(path);
+	}
+	require.resolve = function(request) {
+		return Module._resolveFilename(request, module);
+	};
+	require.cache = Module._cache;
+
+	var print;
+	if(middleware) {
+		print = printer(middleware);
+	} else {
+		print = printer(module._$cafe);
+	}
 	print.__strings__ = function(i) {
 		this.write(strings[i]);
 	};
@@ -67,46 +66,48 @@ function compile(module, filename, stream, middleware) {
 	var options = {
 		filename: filename
 	};
-	var func;
 
-	if('_$cafe' in module) {
-		Object.defineProperty(module, '_$cafe', {
-			get: function() {
-				if(middleware) {
-					return stream;
-				} else {
-					return undefined;
-				}
-			}
-		});
-	}
-	if(middleware) {
+	return {
+		global: global,
+		options: options,
+		middleware: middleware
+	};
+}
+
+function exporter(module, script, env) {
+	var func;
+	if(env.middleware) {
 		// middleware
-		var run = script.runInNewContext(global, options);
+		var run = script.runInNewContext(env.global, env.options);
 		func = function(req, res, next) {
-			stream.direct(res);
+			module._$cafe = env.middleware;
+			env.middleware.direct(res);
 			try {
 				run(req);
-				stream.release();
+				env.middleware.release();
 			} catch(err) {
 				next(err);
 			}
+			module._$cafe = process.stdout;
 		};
-		module.exports.middleware = func;
 	} else {
 		// module
-		func = script.runInNewContext(global, options);
-		module.exports = func;
+		func = script.runInNewContext(env.global, env.options);
 	}
+
+	return func;
 }
 
 require.extensions['.cafe'] = function(module, filename) {
-	var stream = process.stdout;
-	var directed = new Directed();
 	if(module.parent._$cafe) {
 		module._$cafe = module.parent._$cafe;
-		stream = module._$cafe;
+	} else {
+		module._$cafe = process.stdout;
 	}
-	compile(module, filename, stream, false);
-	compile(module, filename, directed, true);
+	var component = compile(module, filename);
+	var local = environment(module, filename, component.strings);
+	var middleware = environment(module, filename, component.strings, new Directed());
+
+	module.exports = exporter(module, component.script, local);
+	module.exports.middleware = exporter(module, component.script, middleware);
 };
