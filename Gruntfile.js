@@ -7,13 +7,22 @@ module.exports = function(grunt) {
 		},
 		jshint: {
 			development: {
-				src: ['Gruntfile.js', 'index.js', 'bin/cafe', 'lib/*.js', '!lib/cafe.js']
+				src: ['Gruntfile.js', 'index.js', 'bin/cafe', 'lib/*.js', '!lib/cafe.js', 'test/**.js']
+			}
+		},
+		nodeunit: {
+			options: {
+				reporter: 'default'
+			},
+			development: {
+				src: ['test/**.js']
 			}
 		}
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-jison');
+	grunt.loadNpmTasks('grunt-contrib-nodeunit');
 
-	grunt.registerTask('default', ['jison', 'jshint']);
+	grunt.registerTask('default', ['jison', 'jshint', 'nodeunit']);
 };

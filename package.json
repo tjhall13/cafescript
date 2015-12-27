@@ -12,7 +12,9 @@
   "devDependencies": {
     "grunt": "^0.4.5",
     "grunt-contrib-jshint": "^0.11.3",
-    "grunt-jison": "^1.3.2"
+    "grunt-contrib-nodeunit": "^0.4.1",
+    "grunt-jison": "^1.3.2",
+    "xerox": "^0.1.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
