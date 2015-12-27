@@ -1,10 +1,9 @@
-var Module = require('module');
 var path = require('path');
 var fs = require('fs');
 var vm = require('vm');
 
-var Directed = require('./lib/directed.js');
-var printer = require('./lib/printer.js');
+var Require = require('./lib/require.js');
+var Printer = require('./lib/printer.js');
 var parser = require('./lib/cafe.js').parser;
 
 function compile(module, filename) {
@@ -17,7 +16,7 @@ function compile(module, filename) {
 
 	var symbols = parser.yy.symbols;
 	var strings = [];
-	var	code = '(function(request) {';
+	var	code = '(function(request) {\nprint = __Printer__(this), require = __Require__(this);\n';
 
 	for(var i = 0; i < symbols.length; i++) {
 		if(!symbols[i].string) {
@@ -38,30 +37,16 @@ function compile(module, filename) {
 	};
 }
 
-function environment(module, filename, strings, middleware) {
-	function require(path) {
-		return module.require(path);
-	}
-	require.resolve = function(request) {
-		return Module._resolveFilename(request, module);
-	};
-	require.cache = Module._cache;
-
-	var print;
-	if(middleware) {
-		print = printer(middleware);
-	} else {
-		print = printer(module._$cafe);
-	}
-	print.__strings__ = function(i) {
-		this.write(strings[i]);
-	};
+function environment(module, filename, component) {
 	var global = {
-		print: print,
-		require: require,
 		console: console,
+		print: null,
+		require: null,
 		__dirname: path.dirname(filename),
-		__filename: path.basename(filename)
+		__filename: path.basename(filename),
+
+		__Printer__: Printer(module, component.strings),
+		__Require__: Require(module)
 	};
 	var options = {
 		filename: filename
@@ -70,44 +55,40 @@ function environment(module, filename, strings, middleware) {
 	return {
 		global: global,
 		options: options,
-		middleware: middleware
+		script: component.script
 	};
 }
 
-function exporter(module, script, env) {
-	var func;
-	if(env.middleware) {
-		// middleware
-		var run = script.runInNewContext(env.global, env.options);
-		func = function(req, res, next) {
-			module._$cafe = env.middleware;
-			env.middleware.direct(res);
-			try {
-				run(req);
-				env.middleware.release();
-			} catch(err) {
-				next(err);
-			}
-			module._$cafe = process.stdout;
-		};
-	} else {
-		// module
-		func = script.runInNewContext(env.global, env.options);
-	}
+function exports(module, filename, env) {
+	var func = env.script.runInNewContext(env.global, env.options);
+	var output = func.bind(this);
+	output.middleware = function(req, res, next) {
+		try {
+			func.call(res, req);
+		} catch(err) {
+			console.error(filename + ':', err);
+			next(err);
+		}
+	};
 
-	return func;
+	return output;
 }
 
-require.extensions['.cafe'] = function(module, filename) {
-	if(module.parent._$cafe) {
-		module._$cafe = module.parent._$cafe;
-	} else {
-		module._$cafe = process.stdout;
-	}
-	var component = compile(module, filename);
-	var local = environment(module, filename, component.strings);
-	var middleware = environment(module, filename, component.strings, new Directed());
+function load(module, filename) {
+	var self = module.parent._$cafe || process.stdout;
+	module.exports = exports.call(self,
+		module,
+		filename,
+		environment(
+			module,
+			filename,
+			compile(
+				module,
+				filename
+			)
+		)
+	);
+}
 
-	module.exports = exporter(module, component.script, local);
-	module.exports.middleware = exporter(module, component.script, middleware);
-};
+require.extensions['.cafe'] = load;
+module.exports = load;
