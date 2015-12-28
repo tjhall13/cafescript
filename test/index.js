@@ -18,12 +18,15 @@ function equal(test) {
 
 module.exports = {
 	load: function(test) {
+		test.expect(2);
 		var _module = new Xerox.documents.Module();
+		_module.id = 'test1.cafe';
 		_module.parent = { };
 		_module.require = require;
 		load(_module, require.resolve('./test1.cafe'));
-		test.equal(typeof _module.exports, 'function');
-		test.equal(typeof _module.exports.middleware, 'function');
+		var value = _module.exports;
+		test.equal(typeof value, 'function');
+		test.equal(typeof value.middleware, 'function');
 		test.done();
 	},
 	require: {
@@ -42,6 +45,7 @@ module.exports = {
 		},
 		middleware: {
 			submodule: function(test) {
+				test.expect(109);
 				var func = require('./test1.cafe');
 				var req = new Xerox.documents.Request();
 				var res = new Xerox.documents.Response();
@@ -78,32 +82,40 @@ module.exports = {
 					// end
 					.expects('\n\t</body>\n</html>\n');
 
+				Response.print('end').calls(function() {
+					test.done();
+				});
 				func.middleware(req, res);
-				test.done();
 			},
 			reuse: function(test) {
-				var func = require('./dir/test3.cafe');
+				test.expect(6);
+				var func = require('./test4.cafe');
 				var req;
 				var res;
 
 				req = new Xerox.documents.Request();
+				req.params = { value: 1 };
 				res = new Xerox.documents.Response();
-				Response.copy(equal(test), 'write')
+				Response.document(res).copy(equal(test), 'write')
 					.expects('<div> ').then()
-					.expects('test').then()
+					.expects('1').then()
 					.expects('\n</div>\n');
 
+				Response.print('end');
 				func.middleware(req, res);
 
 				req = new Xerox.documents.Request();
+				req.params = { value: 2 };
 				res = new Xerox.documents.Response();
-				Response.copy(equal(test), 'write')
+				Response.document(res).copy(equal(test), 'write')
 					.expects('<div> ').then()
-					.expects('test').then()
+					.expects('2').then()
 					.expects('\n</div>\n');
 
+				Response.print('end').calls(function() {
+					test.done();
+				});
 				func.middleware(req, res);
-				test.done();
 			}
 		}
 	}

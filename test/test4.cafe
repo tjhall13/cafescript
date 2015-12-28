@@ -1,0 +1,3 @@
+<div> <$js
+	print(request.params.value); $>
+</div>

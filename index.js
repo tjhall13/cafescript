@@ -16,7 +16,7 @@ function compile(module, filename) {
 
 	var symbols = parser.yy.symbols;
 	var strings = [];
-	var	code = '(function(request) {\nprint = __Printer__(this), require = __Require__(this);\n';
+	var	code = '(function(request) {\nvar print = __Printer__(this), require = __Require__(this);\n';
 
 	for(var i = 0; i < symbols.length; i++) {
 		if(!symbols[i].string) {
@@ -40,13 +40,11 @@ function compile(module, filename) {
 function environment(module, filename, component) {
 	var global = {
 		console: console,
-		print: null,
-		require: null,
 		__dirname: path.dirname(filename),
 		__filename: path.basename(filename),
 
 		__Printer__: Printer(module, component.strings),
-		__Require__: Require(module)
+		__Require__: Require(module, loader)
 	};
 	var options = {
 		filename: filename
@@ -59,14 +57,22 @@ function environment(module, filename, component) {
 	};
 }
 
-function exports(module, filename, env) {
-	var func = env.script.runInNewContext(env.global, env.options);
-	var output = func.bind(this);
+var cache = { };
+
+function exports(module, filename, env, stream) {
+	var func;
+	if(module.id in cache) {
+		func = cache[module.id];
+	} else {
+		func = env.script.runInNewContext(env.global, env.options);
+		cache[module.id] = func;
+	}
+	var output = func.bind(stream);
 	output.middleware = function(req, res, next) {
 		try {
 			func.call(res, req);
+			res.end();
 		} catch(err) {
-			console.error(filename + ':', err);
 			next(err);
 		}
 	};
@@ -74,9 +80,9 @@ function exports(module, filename, env) {
 	return output;
 }
 
-function load(module, filename) {
-	var self = module.parent._$cafe || process.stdout;
-	module.exports = exports.call(self,
+function loader(module, filename) {
+	var stream = module._$cafe || process.stdout;
+	module.exports = exports(
 		module,
 		filename,
 		environment(
@@ -86,9 +92,10 @@ function load(module, filename) {
 				module,
 				filename
 			)
-		)
+		),
+		stream
 	);
 }
 
-require.extensions['.cafe'] = load;
-module.exports = load;
+require.extensions['.cafe'] = loader;
+module.exports = loader;
