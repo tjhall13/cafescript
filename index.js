@@ -4,6 +4,8 @@ var vm = require('vm');
 
 var Require = require('./lib/require.js');
 var Printer = require('./lib/printer.js');
+var StringStream = require('./lib/stringstream.js');
+
 var parser = require('./lib/cafe.js').parser;
 
 function compile(module, filename) {
@@ -98,4 +100,24 @@ function loader(module, filename) {
 }
 
 require.extensions['.cafe'] = loader;
-module.exports = loader;
+module.exports = {
+	render: function(filename, params, callback) {
+		var mod = require(filename);
+
+		var req = {
+			params: params
+		};
+
+		var res = new StringStream('');
+		res.on('error', function(err) {
+			callback(err, null);
+		});
+		res.on('finish', function() {
+			callback(null, res.val());
+		});
+
+		return mod.middleware(req, res, function(err) {
+			callback(err, null);
+		});
+	}
+};

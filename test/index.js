@@ -4,7 +4,7 @@ var Request = new Xerox('Request');
 var Response = new Xerox('Response');
 var Module = new Xerox('Module');
 
-var load = require('../index.js');
+var cafescript = require('../index.js');
 
 function equal(test) {
 	return function(actual, expected, msg) {
@@ -17,17 +17,16 @@ function equal(test) {
 }
 
 module.exports = {
-	load: function(test) {
+	render: function(test) {
 		test.expect(2);
-		var _module = new Xerox.documents.Module();
-		_module.id = 'test1.cafe';
-		_module.parent = { };
-		_module.require = require;
-		load(_module, require.resolve('./test1.cafe'));
-		var value = _module.exports;
-		test.equal(typeof value, 'function');
-		test.equal(typeof value.middleware, 'function');
-		test.done();
+		cafescript.render(require.resolve('./test1.cafe'), { }, function(err, val) {
+			test.equal(err, null);
+			test.equal(
+				'\n<html>\n\t<head>\n\t\t<title>hello</title>\n\t</head>\n\t<body>\n\t\t<ul> \n\t\t\t<li> \n<h4>0</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>1</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>2</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>3</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>4</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>5</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>6</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>7</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>8</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>9</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t</ul> <div> test\n</div>\n\n\t</body>\n</html>\n',
+				val
+			);
+			test.done();
+		});
 	},
 	require: {
 		stdio: function(test) {
