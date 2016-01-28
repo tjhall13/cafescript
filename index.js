@@ -18,7 +18,7 @@ function compile(module, filename) {
 
 	var symbols = parser.yy.symbols;
 	var strings = [];
-	var	code = '(function(request) {\nvar print = __Printer__(this), require = __Require__(this);\n';
+	var	code = '(function() {\nvar print = __Printer__(this), require = __Require__(this), request = __Request__(this);\n';
 
 	for(var i = 0; i < symbols.length; i++) {
 		if(!symbols[i].string) {
@@ -46,7 +46,8 @@ function environment(module, filename, component) {
 		__filename: path.basename(filename),
 
 		__Printer__: Printer(module, component.strings),
-		__Require__: Require(module, loader)
+		__Require__: Require(module, loader),
+		__Request__: function(ctx) { return ctx.req; }
 	};
 	var options = {
 		filename: filename
@@ -61,7 +62,7 @@ function environment(module, filename, component) {
 
 var cache = { };
 
-function exports(module, filename, env, stream) {
+function exports(module, filename, env, ctx) {
 	var func;
 	if(module.id in cache) {
 		func = cache[module.id];
@@ -69,10 +70,14 @@ function exports(module, filename, env, stream) {
 		func = env.script.runInNewContext(env.global, env.options);
 		cache[module.id] = func;
 	}
-	var output = func.bind(stream);
+	var output = func.bind(ctx);
 	output.middleware = function(req, res, next) {
 		try {
-			func.call(res, req);
+			var ctx = {
+				res: res,
+				req: req
+			};
+			func.call(ctx);
 			res.end();
 		} catch(err) {
 			next(err);
@@ -83,7 +88,7 @@ function exports(module, filename, env, stream) {
 }
 
 function loader(module, filename) {
-	var stream = module._$cafe || process.stdout;
+	var ctx = module._$cafe || { res: process.stdout, req: undefined };
 	module.exports = exports(
 		module,
 		filename,
@@ -95,7 +100,7 @@ function loader(module, filename) {
 				filename
 			)
 		),
-		stream
+		ctx
 	);
 }
 
