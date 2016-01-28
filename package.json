@@ -1,6 +1,6 @@
 {
   "name": "cafescript",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "CafeScript is a node component driven preprocessor.",
   "main": "index.js",
   "bin": {
