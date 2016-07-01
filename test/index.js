@@ -17,20 +17,37 @@ function equal(test) {
 }
 
 module.exports = {
-	render: function(test) {
-		test.expect(2);
-		cafescript.render(require.resolve('./test1.cafe'), { }, function(err, val) {
-			test.equal(err, null);
-			test.equal(
-				'\n<html>\n\t<head>\n\t\t<title>hello</title>\n\t</head>\n\t<body>\n\t\t<ul> \n\t\t\t<li> \n<h4>0</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>1</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>2</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>3</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>4</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>5</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>6</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>7</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>8</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>9</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t</ul> <div> test\n</div>\n\n\t</body>\n</html>\n',
-				val
-			);
-			test.done();
-		});
+	render: {
+		globals: function(test) {
+			var render = cafescript.rendering(module);
+
+			test.expect(2);
+			render('./fixtures/test5.cafe', { title: 'hello' }, function(err, val) {
+				test.equal(err, null);
+				test.equal(
+					val,
+					'<html>\n\t<head>\n\t\t<title>hello</title>\n\t</head>\n\t<body>\n\t</body>\n</html>\n'
+				);
+				test.done();
+			});
+		},
+		locals: function(test) {
+			var render = cafescript.rendering(module);
+
+			test.expect(2);
+			render(require.resolve('./fixtures/test1.cafe'), { }, function(err, val) {
+				test.equal(err, null);
+				test.equal(
+					val,
+					'\n<html>\n\t<head>\n\t\t<title>hello</title>\n\t</head>\n\t<body>\n\t\t<ul> \n\t\t\t<li> \n<h4>0</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>1</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>2</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>3</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>4</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>5</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>6</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>7</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>8</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t\t<li> \n<h4>9</h4>\n<div> test\n</div>\n\n\n\t\t\t</li> \n\t\t</ul> <div> test\n</div>\n\n\t</body>\n</html>\n'
+				);
+				test.done();
+			});
+		}
 	},
 	require: {
 		stdio: function(test) {
-/*			var func = require('./dir/test3.cafe');
+/*			var func = require('./fixtures/dir/test3.cafe');
 			var _stdout = process.stdout;
 			process.stdout = new Xerox.documents.Response();
 
@@ -45,7 +62,7 @@ module.exports = {
 		middleware: {
 			submodule: function(test) {
 				test.expect(109);
-				var func = require('./test1.cafe');
+				var func = require('./fixtures/test1.cafe');
 				var req = new Xerox.documents.Request();
 				var res = new Xerox.documents.Response();
 
@@ -88,7 +105,7 @@ module.exports = {
 			},
 			reuse: function(test) {
 				test.expect(6);
-				var func = require('./test4.cafe');
+				var func = require('./fixtures/test4.cafe');
 				var req;
 				var res;
 

@@ -1,14 +1,17 @@
+var Module = require('module');
 var path = require('path');
 var fs = require('fs');
 var vm = require('vm');
 
+var Scanner = require('./lib/scanner.js');
 var Require = require('./lib/require.js');
 var Printer = require('./lib/printer.js');
 var StringStream = require('./lib/stringstream.js');
 
 var parser = require('./lib/cafe.js').parser;
+parser.lexer = new Scanner();
 
-function compile(module, filename) {
+function compile(filename) {
 	var input = fs.readFileSync(filename, 'utf8');
 
 	parser.yy.text = '';
@@ -95,10 +98,7 @@ function loader(module, filename) {
 		environment(
 			module,
 			filename,
-			compile(
-				module,
-				filename
-			)
+			compile(filename)
 		),
 		ctx
 	);
@@ -106,23 +106,30 @@ function loader(module, filename) {
 
 require.extensions['.cafe'] = loader;
 module.exports = {
-	render: function(filename, params, callback) {
-		var mod = require(filename);
+	rendering: function(module) {
+		return function(filename, globals, callback) {
+			var mod;
+			filename = Module._resolveFilename(filename, module);
+			mod = new Module(filename, module);
+			mod.paths = Module._nodeModulePaths(path.dirname(filename));
+			mod.filename = filename;
+			mod.loaded = true;
 
-		var req = {
-			params: params
+			var stream = new StringStream('');
+			var env = environment(mod, filename, compile(filename));
+			var func = env.script.runInNewContext(Object.assign(env.global, globals), env.options);
+
+			stream.on('error', function(err) {
+				callback(err, null);
+			});
+			stream.on('finish', function() {
+				callback(null, stream.val());
+			});
+
+			func.call({
+				res: stream
+			});
+			stream.end();
 		};
-
-		var res = new StringStream('');
-		res.on('error', function(err) {
-			callback(err, null);
-		});
-		res.on('finish', function() {
-			callback(null, res.val());
-		});
-
-		return mod.middleware(req, res, function(err) {
-			callback(err, null);
-		});
 	}
 };

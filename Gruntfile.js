@@ -15,7 +15,7 @@ module.exports = function(grunt) {
 				reporter: 'default'
 			},
 			development: {
-				src: ['test/**.js']
+				src: ['test/*.js', 'test/**/*.js']
 			}
 		}
 	});
