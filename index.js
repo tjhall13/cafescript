@@ -32,7 +32,7 @@ require.extensions['.cafe'] = loader;
 module.exports = {
 	render: function(filename, global, callback) {
 		if(filename in Environment._cache) {
-			env = Environement._cache[filename];
+			env = Environment._cache[filename];
 		} else {
 			var mod;
 
