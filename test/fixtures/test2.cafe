@@ -1,5 +1,6 @@
 <$js
+// Test comment
 var test = require('./dir/test3.cafe');
 $>
-<h4><$ print(arguments[0]); $></h4>
+<h4><$= arguments[0] $></h4>
 <$ test(); $>

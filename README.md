@@ -35,6 +35,14 @@ $>
 print('CafeScript');
 
 $>
+		<div>
+<$
+
+// Use inline mode
+
+$>
+			<$= 'hello' $>
+		</div>
   </body>
 </html>
 ```

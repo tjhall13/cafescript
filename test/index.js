@@ -2,7 +2,6 @@ var Xerox = require('xerox');
 
 var Request = new Xerox('Request');
 var Response = new Xerox('Response');
-var Module = new Xerox('Module');
 
 var cafescript = require('../index.js');
 
@@ -19,23 +18,19 @@ function equal(test) {
 module.exports = {
 	render: {
 		globals: function(test) {
-			var render = cafescript.rendering(module);
-
 			test.expect(2);
-			render('./fixtures/test5.cafe', { title: 'hello' }, function(err, val) {
+			cafescript.render(require.resolve('./fixtures/test5.cafe'), { title: 'hello' }, function(err, val) {
 				test.equal(err, null);
 				test.equal(
 					val,
-					'<html>\n\t<head>\n\t\t<title>hello</title>\n\t</head>\n\t<body>\n\t</body>\n</html>\n'
+					'\n<html>\n\t<head>\n\t\t<title>hello</title>\n\t</head>\n\t<body>\n\t\t<h4>hello</h4>\n\n\t</body>\n</html>\n'
 				);
 				test.done();
 			});
 		},
 		locals: function(test) {
-			var render = cafescript.rendering(module);
-
 			test.expect(2);
-			render(require.resolve('./fixtures/test1.cafe'), { }, function(err, val) {
+			cafescript.render(require.resolve('./fixtures/test1.cafe'), { }, function(err, val) {
 				test.equal(err, null);
 				test.equal(
 					val,

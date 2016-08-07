@@ -1,7 +1,11 @@
+<$js
+var page = require('./test6.cafe');
+$>
 <html>
 	<head>
 		<title><$ print(title); $></title>
 	</head>
 	<body>
+		<$ page() $>
 	</body>
 </html>
