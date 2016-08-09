@@ -16,6 +16,50 @@ function equal(test) {
 }
 
 module.exports = {
+	error: {
+		parse: function(test) {
+			test.expect(1);
+			test.throws(
+				function() {
+					var error = require('./fixtures/error/parse.cafe');
+				},
+				function(error) {
+					return error.message == '/home/trevor/Programming/cafescript/test/fixtures/error/parse.cafe:8:11\n\t<$ \'test\' ! error $>\n\t          ^\nUnexpected token !';
+				}
+			);
+			test.done();
+		},
+		runtime: function(test) {
+			test.expect(1);
+			var error = require.resolve('./fixtures/error/runtime.cafe');
+			test.throws(
+				function() {
+					cafescript.render(error, { });
+				},
+				function(err) {
+					return err.message == 'hello' &&
+						err.stack.split('\n')[1] == '    at ' + error + ':8:11';
+				}
+			);
+			test.done();
+		},
+		stack: function(test) {
+			test.expect(1);
+			var stack = require.resolve('./fixtures/error/stack.cafe');
+			var runtime = require.resolve('./fixtures/error/runtime.cafe');
+			test.throws(
+				function() {
+					cafescript.render(stack, { });
+				},
+				function(err) {
+					return err.message == 'hello' &&
+						err.stack.split('\n')[1] == '    at ' + runtime + ':8:11' &&
+						err.stack.split('\n')[4] == '    at ' + stack + ':6:4';
+				}
+			);
+			test.done();
+		}
+	},
 	render: {
 		globals: function(test) {
 			test.expect(2);

@@ -1,0 +1,10 @@
+<html>
+	<head>
+		<title>
+			<$= 'hello' $>
+		</title>
+	</head>
+	<body>
+	<$ throw new Error('hello'); $>
+	</body>
+</html>

@@ -1,0 +1,8 @@
+<$js
+
+var runtime = require('./runtime.cafe');
+
+$>
+<DOCTYPE html>
+<$ runtime(); $>
+<!-- Comment -->

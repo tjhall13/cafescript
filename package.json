@@ -7,6 +7,7 @@
     "cafe": "bin/cafe"
   },
   "dependencies": {
+    "acorn": "^3.3.0",
     "nopt": "^3.0.4"
   },
   "devDependencies": {
